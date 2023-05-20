@@ -33,7 +33,7 @@ Request:
   {
     "identifier": "product-1",
     "tableName": "product",
-    "search": "orb",
+    "search": "%orb%",
     "selectColumns": ["id", "name", "created_at"],
     "whereColumns": ["name"],
     "limit": 5
@@ -41,7 +41,7 @@ Request:
   {
     "identifier": "product-2",
     "tableName": "product",
-    "search": "m&m",
+    "search": "%m&m",
     "selectColumns": ["id", "name", "created_at"],
     "whereColumns": ["name"],
     "limit": 5
@@ -49,7 +49,7 @@ Request:
   {
     "identifier": "product-3",
     "tableName": "product",
-    "search": "asus",
+    "search": "asus%",
     "selectColumns": ["id", "name", "created_at"],
     "whereColumns": ["name"],
     "limit": 5
@@ -58,6 +58,7 @@ Request:
     "identifier": "product-4",
     "tableName": "product",
     "search": "days",
+    "searchCondition": "=",
     "selectColumns": ["id", "name", "created_at"],
     "whereColumns": ["name"],
     "limit": 5

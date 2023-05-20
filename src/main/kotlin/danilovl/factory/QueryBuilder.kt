@@ -17,20 +17,36 @@ object QueryBuilder {
         }
 
         query += "FROM ${searchParam.tableName}"
+        if (searchParam.whereColumns != null) {
+            query += " WHERE"
+        }
 
-        searchParam.whereColumns?.forEachIndexed { index, tableColumn ->
-            var orWhere = " "
-            if (index > 1) {
-                orWhere = "OR"
+        if (searchParam.search != null) {
+            searchParam.whereColumns?.forEachIndexed { index, tableColumn ->
+                var orWhere = " "
+                if (index >= 1) {
+                    orWhere = "OR"
+                }
+
+                var whereOperator = "LIKE"
+                var whereSearch = searchParam.search
+
+                if (searchParam.searchCondition != null) {
+                    whereOperator = searchParam.searchCondition!!
+                }
+
+                if (whereOperator.equals("LIKE") && !searchParam.search!!.contains("%")) {
+                    whereSearch = "%${searchParam.search}%"
+                }
+
+                query += " $orWhere $tableColumn $whereOperator '$whereSearch'"
             }
-
-            query += "$orWhere WHERE $tableColumn LIKE '%${searchParam.search}%'"
         }
 
         query += " ORDER BY id"
         query += " LIMIT ${searchParam.limit}"
         query += " OFFSET ${searchParam.offset};"
 
-        return query
+        return query.replace("\\s+".toRegex(), " ")
     }
 }
