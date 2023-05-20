@@ -4,54 +4,66 @@ import danilovl.factory.QueryBuilder
 import danilovl.model.SearchInTableResult
 import danilovl.model.SearchParam
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlin.system.measureTimeMillis
 
-class Search {
-    companion object {
-        suspend fun search(searchParams: Array<SearchParam>): List<MutableMap<String, SearchInTableResult>> {
-            val result = runBlocking {
-                val deferreds: List<Deferred<MutableMap<String, SearchInTableResult>>> = searchParams.map {
-                    it
-                    async {
-                        searchInTable(it)
+object Search {
+    suspend fun search(searchParams: Array<SearchParam>): List<MutableMap<String, SearchInTableResult>> {
+        val channel = Channel<MutableMap<String, SearchInTableResult>>()
+        val result: MutableList<MutableMap<String, SearchInTableResult>> = mutableListOf()
+
+        coroutineScope {
+            searchParams.map {
+                launch {
+                    val startTime = System.currentTimeMillis()
+                    val executionTime = measureTimeMillis {
+                        searchInTable(it, channel)
                     }
-                }
+                    val endTime = System.currentTimeMillis()
 
-                deferreds.awaitAll()
+                    println("Search in table for '${it.identifier}' was completed within ${executionTime} ms. Start: ${startTime} End: ${endTime}")
+                }
             }
 
-            return result
+            repeat(searchParams.size) {
+                result.add(channel.receive())
+            }
         }
 
-        private fun searchInTable(searchParam: SearchParam): MutableMap<String, SearchInTableResult> {
-            val query = QueryBuilder.getQuery(searchParam)
+        return result
+    }
 
-            val statement = Database.getConnection().prepareStatement(query)
-            val queryResult = statement.executeQuery()
+    private suspend fun searchInTable(searchParam: SearchParam, channel: Channel<MutableMap<String, SearchInTableResult>>) {
+        val query = QueryBuilder.getQuery(searchParam)
 
-            val result = mutableMapOf<String, SearchInTableResult>()
-            val resultRows = mutableListOf<MutableMap<String, String?>>()
-            val columnsNumber: Int = queryResult.metaData.columnCount
+        val statement = Database.getConnection().prepareStatement(query)
+        val queryResult = statement.executeQuery()
 
-            while (queryResult.next()) {
-                val rowResult = mutableMapOf<String, String?>()
+        val result = mutableMapOf<String, SearchInTableResult>()
+        val resultRows = mutableListOf<MutableMap<String, String?>>()
+        val columnsNumber: Int = queryResult.metaData.columnCount
 
-                for (i in 1..columnsNumber) {
-                    val columnName = queryResult.metaData.getColumnName(i)
-                    var columnValue: String? = null
+        while (queryResult.next()) {
+            val rowResult = mutableMapOf<String, String?>()
 
-                    try {
-                        columnValue = queryResult.getString(i)
-                    } catch (e: NullPointerException) {}
+            for (i in 1..columnsNumber) {
+                val columnName = queryResult.metaData.getColumnName(i)
+                var columnValue: String? = null
 
-                    rowResult[columnName] = columnValue
+                try {
+                    columnValue = queryResult.getString(i)
+                } catch (e: NullPointerException) {
+                    println("Query result for '$columnName' is error")
                 }
 
-                resultRows.add(rowResult)
+                rowResult[columnName] = columnValue
             }
 
-            result[searchParam.identifier] = SearchInTableResult(resultRows.size, resultRows)
-
-            return result
+            resultRows.add(rowResult)
         }
+
+        result[searchParam.identifier] = SearchInTableResult(resultRows.size, resultRows)
+
+        channel.send(result)
     }
 }

@@ -41,4 +41,9 @@ dependencies {
     implementation("io.ktor:ktor-server-status-pages-jvm:2.2.4")
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    implementation(kotlin("stdlib-jdk8"))
+}
+
+kotlin {
+    jvmToolchain(11)
 }
