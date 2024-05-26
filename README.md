@@ -6,7 +6,7 @@ Simple multi table search where one query can search in several tables by certai
 
 ### Requirements
 
-* Kotlin 1.8.20
+* Kotlin 2.0.0
 * SQL DB
 
 ### 1. Installation
